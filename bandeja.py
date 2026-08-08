@@ -1,134 +1,146 @@
 import flet as ft
+#from backend import enviar_correo
 
 
-def mostrar_bandeja(page: ft.Page,datos):
-    page.title="Bandeja de entrada"
-    page.padding=0
-    page.spacing=0
-    page.bgcolor=ft.Colors.BLACK
 
-    coreos_cache=[]
+def mostrar_bandeja(page: ft.Page, datos):
+    page.title = "Bandeja de entrada"
+    page.padding = 10
+    page.spacing = 0
+    page.bgcolor = ft.Colors.BLACK
+    prefs = ft.SharedPreferences()
+    fila=ft.Container
 
-    lista = ft.Column(controls=coreos_cache, scroll=ft.ScrollMode.AUTO, expand=True)
+    
+    correos_cache = []
+    for correo in datos:
+        fila = ft.Container(
+            visible=True,
+            padding=ft.Padding(top=40),
+            content=ft.Row(
+                controls=[
+                    ft.Checkbox(value=False),
+                    ft.Icon(
+                        ft.Icons.STAR_BORDER,
+                        color=ft.Colors.GREEN_200
+                    ),
+                    ft.Container(
+                        content=ft.Text(correo.get("id")),
+                        width=50
+                    ),
+                    ft.Container(
+                        content=ft.Text(correo.get("remitente")),
+                        expand=True
+                    ),
+                    ft.Container(
+                        content=ft.Text(correo.get("asunto")),
+                        expand=True
+                    ),
+                ]
+            )
+        )       
+        correos_cache.append(fila)
+    lista = ft.Column(controls=correos_cache, scroll=ft.ScrollMode.AUTO, expand=True)
 
-    if page.platform in [ft.PagePlatform.WINDOWS, ft.PagePlatform.LINUX]:
+    def cambiar_nav():
+        for fila in correos_cache:
+            if fila.visible:
+                fila.visible = False 
+            else:
+                fila.visible = True
+
+            page.update()
+        print("cambiando la visibilidad del container")
+
+
+    es_movil = page.platform in [ft.PagePlatform.ANDROID, ft.PagePlatform.IOS]
+    #solo pc
+    if not es_movil:
+        page.title = "Jmail"
+        page.theme_mode = ft.ThemeMode.DARK
         page.vertical_alignment = ft.MainAxisAlignment.CENTER
-        page.window.resizable=False
-        page.window.maximized=False
-        page.window.full_screem=False   
-        page.window.width = 1000
-        page.window.height = 500    
-        page.window.min_width = 400
-        page.window.max_width = 400
-        page.window.min_height = 500
-        page.window.max_height = 500    
-        page.window.resizable = True
+        page.window.width = 800
+        page.window.height = 900
 
-    elif page.platform in [ft.PagePlatform.ANDROID]:
-        page.window.width = 400
-        page.window.height = 500
-    
-        page.window.min_width = 400
-        page.window.max_width = 400
-        page.window.min_height = 500
-        page.window.max_height = 500
+        page.window.min_width = 900
+        page.window.max_width = 1000
+        page.window.min_height = 700
+        page.window.max_height = 1000
     
         page.window.resizable = True
+    
 
-        page.nave_bar=ft.NavigationBar(
+        
+    async def limpiar_storange():
+        await prefs.clear()
+
+        print("saliendo")
+        page.clean()
+
+        await page.push_route("/main")
+
+
+
+    async def cambiar_vista(e):
+        botones=["Recibidos","Enviados","Archivados","Borradores","Salir"]
+        indice=e.control.selected_index
+        match indice:
+            case 4:
+                await limpiar_storange()
+            case _:
+                print("toque el boton: ",botones[indice])
+
+        
+
+        
+
+    if es_movil:
+        page.navigation_bar = ft.NavigationBar(
+        #selected_index=0,
+        #label_type=ft.NavigationRailLabelType.ALL, solo con rail
+        #min_width=100,
+        #min_extended_width=200,
+        #bgcolor=ft.Colors.SURFACE_CONTAINER,
+        #group_alignment=-1.0,
             destinations=[
                 ft.NavigationBarDestination(icon=ft.Icons.INBOX, label="Recibidos"),
                 ft.NavigationBarDestination(icon=ft.Icons.SEND, label="Enviados"),
                 ft.NavigationBarDestination(icon=ft.Icons.ARCHIVE, label="Archivados"),
-                ft.NavigationBarDestination(icon=ft.Icons.ARCHIVE, label="Archivados")
-            ]
-        )
-        page.redactar=ft.FloatingActionButton(
-            icon=ft.Icons.CREATE, tooltip="Redactar"
-        )
-
-    
-    side_bar=ft.NavigationRail(
-        selected_index=0,
-        label_type=ft.NavigationRailLabelType.ALL,
-        min_width=100,
-        min_extended_width=200,
-        #bgcolor=ft.Colors.SURFACE_CONTAINER,
-        group_alignment=-1.0, #centra los elementos al final o al principio
-        destinations=[
-        ft.NavigationRailDestination(
-            icon=ft.Icons.INBOX_OUTLINED, 
-            label="Recibidos",
-            selected_icon=ft.Icons.INBOX, 
-        ),
-        ft.NavigationBarDestination(
-            icon=ft.Icons.SEND,
-            label="Enviados",
-            selected_icon=ft.Icons.SEND_AND_ARCHIVE #icono cuando se le hace click
-        ),
-        ft.NavigationRailDestination(
-            icon=ft.Icons.ARCHIVE,
-            label="Archivados",
-            selected_icon=ft.Icons.ALL_INBOX #icono cuando se le hace click
-            ),
-        ft.NavigationRailDestination(
-            icon=ft.Icons.DRAFTS,
-            label="Borradores",
-            selected_icon=ft.Icons.DOCUMENT_SCANNER #icono cuando se le hace click
-            ),
-        ],
-        trailing=ft.FloatingActionButton(
-            icon=ft.Icons.CREATE,
-            content=ft.Text("Redactar", color=ft.Colors.WHITE),
-            #style=ft.ButtonStyle(bgcolor=ft.Colors.BLUE_GREY_900),
-        )    
-    )
-
-    
-    for i in datos:
-        fila=ft.Row(
-            controls=[
-                ft.Checkbox(value=False),
-                ft.Icon(ft.Icons.STAR_BORDER, color=ft.Colors.GREEN_200),
-                ft.Container(
-                    content=ft.Text(i.get("id")),
-                    expand=True
-                ),
-                ft.Container(
-                    content=ft.Text(i.get("remitente")),
-                    expand=True
-                    ),
-                ft.Container(
-                    content=ft.Text(i.get("asunto")),
-                    expand=True
-                    ),
-            
-            ]
-        )
-        coreos_cache.append(fila)
-    container=ft.Container(
-        #bgcolor=ft.Colors.BLACK,
-        content=ft.Column(
-            controls=coreos_cache,
-            scroll=ft.ScrollMode.AUTO,
-            alignment=ft.MainAxisAlignment.START,
-            expand=True
-        )
-    )
-
-    
-
-    page.add(
-        ft.Row(
-            controls=[
-                side_bar,
-                container
+                ft.NavigationBarDestination(icon=ft.Icons.DRAFTS, label="Borradores"),
+                ft.IconButton(icon=ft.Icons.EXIT_TO_APP, tooltip="Salir", on_click=limpiar_storange)
             ],
-            expand=True,
-            vertical_alignment=ft.CrossAxisAlignment.START,
-            alignment=ft.MainAxisAlignment.START,
-            spacing=20,
+            on_change=cambiar_vista
         )
-    )
+        page.floating_action_button = ft.FloatingActionButton(
+            icon=ft.Icons.CREATE, tooltip="Redactar",on_click=cambiar_nav
+        )
+        page.add(lista)
+
+    else:
+        # PC: sidebar lateral
+        side_bar = ft.NavigationRail(
+            selected_index=0,
+            on_change=cambiar_vista,
+            #padding=ft.Padding.top(20),
+            destinations=[
+                ft.NavigationRailDestination(icon=ft.Icons.INBOX_OUTLINED, label="Recibidos", selected_icon=ft.Icons.INBOX),
+                ft.NavigationRailDestination(icon=ft.Icons.SEND, label="Enviados", selected_icon=ft.Icons.SEND_AND_ARCHIVE),
+                ft.NavigationRailDestination(icon=ft.Icons.ARCHIVE, label="Archivados", selected_icon=ft.Icons.ALL_INBOX),
+                ft.NavigationRailDestination(icon=ft.Icons.DRAFTS, label="Borradores", selected_icon=ft.Icons.DOCUMENT_SCANNER),
+                ft.NavigationRailDestination(icon=ft.Icons.EXIT_TO_APP, label="Salir", selected_icon=ft.Icons.CLOSE),
+
+            ],
+            trailing=ft.FloatingActionButton(
+                icon=ft.Icons.CREATE,
+                content=ft.Text("Redactar", color=ft.Colors.WHITE),
+                on_click=cambiar_nav
+            )
+        )
+        
+        page.add(ft.Row(controls=[side_bar, lista], expand=True, spacing=0))
+
+
+
     page.update()
+    
 

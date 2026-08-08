@@ -3,24 +3,28 @@ import yaml
 from pathlib import Path
 from backend import leer_correos
 from bandeja import mostrar_bandeja
+from token_script import crear_token
+import requests
 
-def main(page: ft.Page): #solo debe haber un main.py para que la aplicaion funcione y le diga a flet cual compilar
+async def main(page: ft.Page): #solo debe haber un main.py para que la aplicaion funcione y le diga a flet cual compilar
+
+    prefs = ft.SharedPreferences()
     page.title = "Jmail"
     page.theme_mode = ft.ThemeMode.DARK
     page.vertical_alignment = ft.MainAxisAlignment.CENTER
-    page.window.resizable=False
     page.window.maximized=False
     page.window.full_screem=False
 
     page.window.width = 400
-    page.window.height = 500
+    page.window.height = 700
 
     page.window.min_width = 400
     page.window.max_width = 400
-    page.window.min_height = 500
-    page.window.max_height = 500
+    page.window.min_height = 700
+    page.window.max_height = 800
 
     page.window.resizable = True
+    
 
     usuario = ft.TextField(
         label="Usuario",
@@ -56,6 +60,23 @@ def main(page: ft.Page): #solo debe haber un main.py para que la aplicaion funci
         on_click=redireccionar
     )
 
+    async def route_change(e):
+        print("🔥 ROUTE CHANGE EJECUTADO")
+        print("ruta evento:", e.route)
+        print("page.route:", page.route)
+
+        #page.views.clear()
+
+        if e.route == "/main":
+            print("volviendo a main")
+            await main(page)
+
+            
+        page.update()
+
+
+    page.on_route_change = route_change
+
 
     cuadro_imagen = ft.Container(
         width=150,
@@ -69,32 +90,97 @@ def main(page: ft.Page): #solo debe haber un main.py para que la aplicaion funci
             fit=ft.BoxFit.COVER,
         )
     )
+    
+    version_instalada=""
 
+    def obtener_ultima_version():
+        nonlocal version_instalada
+        
+        try:
+            url = "https://api.github.com/repos/Revan007pro/Jmail/releases/latest"
+            
+            r=requests.get(url,timeout=10)
+            r.raise_for_status()
+    
+            data=r.json()
+            version_nube=data["tag_name"]
+            apk=data["assets"][0]
+            if version_nube !=version_instalada:
+                version_instalada=version_nube      
+                print("hay una nueva version")
+                texto_actualizar.visible=True
+                page.update()
+                
+                version_install()
+            else:
+                print("no hay nueva version")
+        except Exception as err:
+            print(f"error actualizando la app: {err}")
+
+        
+
+        
+        
+    def version_install():
+        print("la version instalada es: ",version_instalada)
+
+    def actualizar():
+        print("actualizando")
+
+    texto_actualizar=ft.TextButton(
+        "Hay una nueva version desea actualizar",
+        visible=False,
+        style=ft.ButtonStyle(color=ft.Colors.CYAN_300),
+        on_click=actualizar
+    )
+
+    token_guardado = await prefs.get("mi_token_guardado")
+    usuario_guardado = await prefs.get("usuario_guardado")
+    pass_guardada = await prefs.get("pass_guardada")
+
+    if token_guardado and usuario_guardado and pass_guardada:
+        resultado = leer_correos(usuario=usuario_guardado, password=pass_guardada)
+        if resultado["exito"]:
+            mostrar_bandeja(page, resultado["datos"])
+            return  # ← sale para no renderizar el login
     def guardar_correo_user():
         if check_box.value:
             carpeta = Path(__file__).parent / "save"
             archivo = carpeta / "save_user.yaml"
             with open(archivo,"w",encoding="utf-8") as f:
                 yaml.dump(usuario.value,f,allow_unicode=True,sort_keys=False)
+    async def guardar_token(resultado):
+        correo=usuario.value
+        password=credencial.value
+        hash_contrasenia=crear_token(correo,password)
+        if hash_contrasenia:
+            await prefs.set("mi_token_guardado", hash_contrasenia)
+            await prefs.set("usuario_guardado", correo)
+            await prefs.set("pass_guardada", password)
+            print("token guardado:", hash_contrasenia)
+
+
+
     
-    def ingresar_usuario(e):
+    
+    async def ingresar_usuario(e):
         resultado=leer_correos(
             usuario=usuario.value,
-            servidor_imap=credencial.value #se le pasa al backend como parametro
-        )
+            password=credencial.value #se le pasa al backend como parametro
+            )
         if  usuario.value=="" or credencial.value=="":
             mensaje.value="porfavor llenar todos los campos"
             mensaje.color=ft.Colors.RED
             page.update()
             return       
-        if resultado["exito"]:
-            mensaje.value="conexion establecida"
-            mensaje.color=ft.Colors.GREEN
+        elif resultado["exito"]:
             page.clean()
-            vista_nueva=mostrar_bandeja(page,resultado["datos"])
+            mostrar_bandeja(page,resultado["datos"])
+            await guardar_token(resultado)
+
         else:
             mensaje.value=f"error: {resultado['error']}"
-            mensaje.color=ft.Color.RED
+            mensaje.color=ft.Colors.RED
         guardar_correo_user()
 
 
@@ -103,6 +189,11 @@ def main(page: ft.Page): #solo debe haber un main.py para que la aplicaion funci
         if file.exists:
             with open(file,"r",encoding="utf-8") as e:
                 usuario.value=yaml.safe_load(e)
+
+
+
+    
+
 
     page.update()
 
@@ -121,6 +212,7 @@ def main(page: ft.Page): #solo debe haber un main.py para que la aplicaion funci
                 boton,
                 check_box,
                 link,
+                texto_actualizar,
                 mensaje
                 
             ],
@@ -131,6 +223,8 @@ def main(page: ft.Page): #solo debe haber un main.py para que la aplicaion funci
     )
 
     traer_correo_save()
+    obtener_ultima_version()
+
 #ft.app(target=main) deprecada
 
 ft.run(main)
