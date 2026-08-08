@@ -61,9 +61,6 @@ async def main(page: ft.Page): #solo debe haber un main.py para que la aplicaion
     )
 
     async def route_change(e):
-        print("🔥 ROUTE CHANGE EJECUTADO")
-        print("ruta evento:", e.route)
-        print("page.route:", page.route)
 
         #page.views.clear()
 
@@ -93,8 +90,11 @@ async def main(page: ft.Page): #solo debe haber un main.py para que la aplicaion
     
     version_instalada=""
 
-    def obtener_ultima_version():
+    async def obtener_ultima_version():
         nonlocal version_instalada
+        ver_guardada = await prefs.get("version_instada_guardada")
+        version_instalada=ver_guardada
+        print("la version en el localStorange es: ",ver_guardada)
         
         try:
             url = "https://api.github.com/repos/Revan007pro/Jmail/releases/latest"
@@ -105,23 +105,21 @@ async def main(page: ft.Page): #solo debe haber un main.py para que la aplicaion
             data=r.json()
             version_nube=data["tag_name"]
             apk=data["assets"][0]
-            if version_nube !=version_instalada:
+            if version_nube !=ver_guardada:
                 version_instalada=version_nube      
                 print("hay una nueva version")
                 texto_actualizar.visible=True
                 page.update()
                 
-                version_install()
+                await version_install()
             else:
                 print("no hay nueva version")
         except Exception as err:
             print(f"error actualizando la app: {err}")
 
-        
-
-        
-        
-    def version_install():
+             
+    async def version_install():
+        await prefs.set("version_instada_guardada", version_instalada)
         print("la version instalada es: ",version_instalada)
 
     def actualizar():
@@ -137,6 +135,7 @@ async def main(page: ft.Page): #solo debe haber un main.py para que la aplicaion
     token_guardado = await prefs.get("mi_token_guardado")
     usuario_guardado = await prefs.get("usuario_guardado")
     pass_guardada = await prefs.get("pass_guardada")
+
 
     if token_guardado and usuario_guardado and pass_guardada:
         resultado = leer_correos(usuario=usuario_guardado, password=pass_guardada)
@@ -223,7 +222,7 @@ async def main(page: ft.Page): #solo debe haber un main.py para que la aplicaion
     )
 
     traer_correo_save()
-    obtener_ultima_version()
+    await obtener_ultima_version()
 
 #ft.app(target=main) deprecada
 
