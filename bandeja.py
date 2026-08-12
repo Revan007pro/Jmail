@@ -1,5 +1,6 @@
 import flet as ft
 #from backend import enviar_correo
+from enviar_correo import send_correo
 
 
 
@@ -9,7 +10,7 @@ def mostrar_bandeja(page: ft.Page, datos):
     page.spacing = 0
     page.bgcolor = ft.Colors.BLACK
     prefs = ft.SharedPreferences()
-    fila=ft.Container
+
 
     
     correos_cache = []
@@ -42,16 +43,7 @@ def mostrar_bandeja(page: ft.Page, datos):
         correos_cache.append(fila)
     lista = ft.Column(controls=correos_cache, scroll=ft.ScrollMode.AUTO, expand=True)
 
-    def cambiar_nav():
-        for fila in correos_cache:
-            if fila.visible:
-                fila.visible = False 
-            else:
-                fila.visible = True
-
-            page.update()
-        print("cambiando la visibilidad del container")
-
+        
 
     es_movil = page.platform in [ft.PagePlatform.ANDROID, ft.PagePlatform.IOS]
     #solo pc
@@ -84,24 +76,26 @@ def mostrar_bandeja(page: ft.Page, datos):
     async def cambiar_vista(e):
         botones=["Recibidos","Enviados","Archivados","Borradores","Salir"]
         indice=e.control.selected_index
-        match indice:
+        match indice:        
             case 4:
                 await limpiar_storange()
             case _:
                 print("toque el boton: ",botones[indice])
+                if botones[indice]:
+                    for fila in correos_cache:
+                        if fila.visible:
+                            fila.visible=False
 
+                        else:
+                            fila.visible=True
         
+                page.update()
+                print("cambiando la visibilidad del container")
 
         
 
     if es_movil:
         page.navigation_bar = ft.NavigationBar(
-        #selected_index=0,
-        #label_type=ft.NavigationRailLabelType.ALL, solo con rail
-        #min_width=100,
-        #min_extended_width=200,
-        #bgcolor=ft.Colors.SURFACE_CONTAINER,
-        #group_alignment=-1.0,
             destinations=[
                 ft.NavigationBarDestination(icon=ft.Icons.INBOX, label="Recibidos"),
                 ft.NavigationBarDestination(icon=ft.Icons.SEND, label="Enviados"),
@@ -112,7 +106,7 @@ def mostrar_bandeja(page: ft.Page, datos):
             on_change=cambiar_vista
         )
         page.floating_action_button = ft.FloatingActionButton(
-            icon=ft.Icons.CREATE, tooltip="Redactar",on_click=cambiar_nav
+            icon=ft.Icons.CREATE, tooltip="Redactar",on_click=send_correo
         )
         page.add(lista)
 
@@ -133,9 +127,10 @@ def mostrar_bandeja(page: ft.Page, datos):
             trailing=ft.FloatingActionButton(
                 icon=ft.Icons.CREATE,
                 content=ft.Text("Redactar", color=ft.Colors.WHITE),
-                on_click=cambiar_nav
+                on_click=lambda e: send_correo(e.page)
             )
         )
+        
         
         page.add(ft.Row(controls=[side_bar, lista], expand=True, spacing=0))
 

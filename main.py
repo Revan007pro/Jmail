@@ -5,6 +5,8 @@ from backend import leer_correos
 from bandeja import mostrar_bandeja
 from token_script import crear_token
 import requests
+import flet_permission_handler as fph
+
 
 async def main(page: ft.Page): #solo debe haber un main.py para que la aplicaion funcione y le diga a flet cual compilar
 
@@ -24,6 +26,8 @@ async def main(page: ft.Page): #solo debe haber un main.py para que la aplicaion
     page.window.max_height = 800
 
     page.window.resizable = True
+
+    es_movil = page.platform in [ft.PagePlatform.ANDROID, ft.PagePlatform.IOS]
     
 
     usuario = ft.TextField(
@@ -88,13 +92,18 @@ async def main(page: ft.Page): #solo debe haber un main.py para que la aplicaion
         )
     )
     
-    version_instalada=""
+    
+    version_nube=""
+    version_instalada="" #se debe cambiar cuando se suba la aplicacion 
+    data_nube=None
+
+    async def set_version():
+        await prefs.set("version_instada_guardada", version_instalada)
+        print("la version instalada es: ",version_instalada)
 
     async def obtener_ultima_version():
-        nonlocal version_instalada
         ver_guardada = await prefs.get("version_instada_guardada")
-        version_instalada=ver_guardada
-        print("la version en el localStorange es: ",ver_guardada)
+        nonlocal version_nube, data_nube
         
         try:
             url = "https://api.github.com/repos/Revan007pro/Jmail/releases/latest"
@@ -102,34 +111,41 @@ async def main(page: ft.Page): #solo debe haber un main.py para que la aplicaion
             r=requests.get(url,timeout=10)
             r.raise_for_status()
     
-            data=r.json()
-            version_nube=data["tag_name"]
-            apk=data["assets"][0]
-            if version_nube !=ver_guardada:
-                version_instalada=version_nube      
+            data_nube=r.json()
+            version_nube=data_nube["tag_name"]
+            print("la version de la nube es: ",version_nube)
+            if version_nube !=ver_guardada:   
                 print("hay una nueva version")
                 texto_actualizar.visible=True
                 page.update()
                 
-                await version_install()
+                
             else:
                 print("no hay nueva version")
         except Exception as err:
             print(f"error actualizando la app: {err}")
 
-             
-    async def version_install():
-        await prefs.set("version_instada_guardada", version_instalada)
-        print("la version instalada es: ",version_instalada)
 
-    def actualizar():
+    async def actualizar(e):    
+        version_instalada=version_nube
+        try:
+            if es_movil:
+                url = "https://github.com/Revan007pro/Jmail/releases"
+                await ft.UrlLauncher().launch_url(url)
+            else:
+                print("funcion para actualizar en escritorio")
+
+            print("Instalación lanzada. El usuario debe confirmar la instalación.")
+        except Exception as err:
+            print(f"error actualizando: {err}")
         print("actualizando")
+        print("despues de la actualizacion la version es: ",version_instalada)
 
     texto_actualizar=ft.TextButton(
         "Hay una nueva version desea actualizar",
         visible=False,
         style=ft.ButtonStyle(color=ft.Colors.CYAN_300),
-        on_click=actualizar
+        on_click=lambda e: page.run_task(actualizar, e)
     )
 
     token_guardado = await prefs.get("mi_token_guardado")
@@ -158,10 +174,61 @@ async def main(page: ft.Page): #solo debe haber un main.py para que la aplicaion
             await prefs.set("pass_guardada", password)
             print("token guardado:", hash_contrasenia)
 
+    if es_movil:
+
+        #permisos_handler = fph.PermissionHandler()
+#
+        #async def pedir_permisos_runtime():
+        #    status = await permisos_handler.request(
+        #        #fph.Permission.MANAGE_EXTERNAL_STORAGE
+        #        await permisos_handler.open_app_settings()
+        #    )
+#
+        #    print(f"Permiso de almacenamiento: {status}")
+#
+        #def cerrar_dialogo(e):
+        #    dialogo.open = False
+        #    page.update()
+#
+        #def aceptar_permisos(e):
+        #    dialogo.open = False
+        #    page.update()
+#
+        #    # haya pulsado "Sí"
+        #    page.run_task(pedir_permisos_runtime)
+#
+        #dialogo = ft.AlertDialog(
+        #    modal=True,
+        #    title=ft.Text("Permisos de almacenamiento"),
+        #    content=ft.Text(
+        #        "Jmail necesita permisos de almacenamiento "
+        #        "para poder guardar y acceder a tus archivos."
+        #    ),
+        #    actions=[
+        #        ft.TextButton(
+        #            "No",
+        #            on_click=cerrar_dialogo
+        #        ),
+        #        ft.Button(
+        #            "Sí",
+        #            on_click=aceptar_permisos
+        #        ),
+        #    ],
+        #    actions_alignment=ft.MainAxisAlignment.END,
+        #)
+#
+        #page.overlay.append(dialogo)
+#
+        #def mostrar_dialogo():
+        #    dialogo.open = True
+        #    page.update()
+#
+        #mostrar_dialogo()
+#
+        #page.update()
+        pass
 
 
-    
-    
     async def ingresar_usuario(e):
         resultado=leer_correos(
             usuario=usuario.value,
@@ -191,8 +258,6 @@ async def main(page: ft.Page): #solo debe haber un main.py para que la aplicaion
 
 
 
-    
-
 
     page.update()
 
@@ -220,10 +285,9 @@ async def main(page: ft.Page): #solo debe haber un main.py para que la aplicaion
             spacing=20,
         )
     )
-
     traer_correo_save()
     await obtener_ultima_version()
+    await set_version()
 
-#ft.app(target=main) deprecada
 
 ft.run(main)

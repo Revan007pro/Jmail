@@ -4,8 +4,17 @@ version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
+
 dependencies = [
     "flet>=0.86.5",
+    "flet-permission-handler>=0.86.5",
     "pyyaml>=6.0.3",
     "requests>=2.34.2",
+]
+
+[tool.flet.android]
+permissions = [
+    "android.permission.INTERNET",
+    "android.permission.WRITE_EXTERNAL_STORAGE",
+    "android.permission.REQUEST_INSTALL_PACKAGES",
 ]

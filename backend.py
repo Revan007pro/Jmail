@@ -1,11 +1,11 @@
 import imaplib
 import email
+from email.message import EmailMessage
 from email.header import decode_header
-#import smtplib
+import smtplib
+import flet as ft
 
-#from fastapi import FastAPI, HTTPException
 
-#app=FastAPI()
 
 ima_servidor="imap.gmail.com"
 
@@ -63,18 +63,30 @@ def leer_correos(usuario: str,password:str):
             "error": str(e)
         }
 
-""" @app.get("/correos")
-def get_correos_api():
-    resultado = leer_correos()
-    if "error" in resultado:
-        raise HTTPException(status_code=500, detail=f"error de conexion: {resultado['error']}")
-    return resultado
+async def mensaje_enviar(correo:str,asunto:str,cuerpo:str,mensaje,page):
 
-
-    nota solo cuando se tenga un servidor dedicado
-        
- """
+    prefs = ft.SharedPreferences()
+    usuario_guardado = await prefs.get("usuario_guardado")
+    pass_guardada= await prefs.get("pass_guardada") #nota acepta la credencia guardada
+    try:
+        email_mensaje=EmailMessage()
+        email_mensaje.set_content(cuerpo.value or "" ) 
+        email_mensaje["Subject"]=asunto.value or ""
+        email_mensaje["To"]=correo.value or ""
+        email_mensaje["From"]=usuario_guardado
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as e:
+            e.login(usuario_guardado,pass_guardada)
+            e.send_message(email_mensaje)
+            mensaje.value = "mensaje enviado correctamente"
+            mensaje.color = ft.Colors.GREEN
+            correo.value = ""
+            asunto.value = ""
+            cuerpo.value = ""
+            page.update()
             
+    except Exception as err:
+        print(f"el error es: {err}")
+        mensaje.value="error enviando el correo"
 
 
 
