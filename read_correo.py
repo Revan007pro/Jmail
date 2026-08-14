@@ -1,12 +1,12 @@
 import flet as ft
-from backend import mensaje_enviar
+from enviar_correo import send_correo
 
-def send_correo(page_or_event,correoEn,asuntoEn):
+def leer_correo(page_or_event,datos):
     # Obtener el objeto page de forma segura
     page = getattr(page_or_event, "page", page_or_event)
 
     page.clean()
-    page.title = "Enviar Correo"
+    page.title = "Leer Correo"
     page.padding = 0
     page.spacing = 0
     page.bgcolor = ft.Colors.BLACK
@@ -15,10 +15,22 @@ def send_correo(page_or_event,correoEn,asuntoEn):
     page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
     
     page.window.resizable = True
+    #print("el remitente es: ",datos) 
+
+    es_movil = page.platform in [ft.PagePlatform.ANDROID, ft.PagePlatform.IOS]
+
+    if es_movil:
+        def retroceso(e: ft.ViewPopEvent):
+            if len(page.views) > 1:
+                print("devolviendome")
+                page.views.pop()
+                page.go(page.views[-1].route)
+        page.on_view_pop = retroceso
+
 
     correo = ft.TextField(
         label="Correo",
-        value=correoEn or "",
+        value=datos.get("remitente"),
         width=300,
         border_color=ft.Colors.BLUE_400,
         focused_border_color=ft.Colors.BLUE_ACCENT,
@@ -27,7 +39,7 @@ def send_correo(page_or_event,correoEn,asuntoEn):
     
     asunto = ft.TextField(
         label="Asunto",
-        value=asuntoEn or "",
+        value=datos.get("asunto"),
         width=300,
         border_color=ft.Colors.BLUE_400,
         focused_border_color=ft.Colors.BLUE_ACCENT,
@@ -36,6 +48,7 @@ def send_correo(page_or_event,correoEn,asuntoEn):
     
     cuerpo = ft.TextField(
         label="Cuerpo",
+        value=datos.get("Body"),
         width=300,
         multiline=True,
         min_lines=5,
@@ -44,25 +57,17 @@ def send_correo(page_or_event,correoEn,asuntoEn):
         focused_border_color=ft.Colors.BLUE_ACCENT,
     )
 
-    # Texto de estado para el backend
-    mensaje = ft.Text("", size=14, text_align=ft.TextAlign.CENTER)
+
 
     container_botones = ft.Row(
         controls=[
             ft.TextButton(
-                "Cancelar",
-                on_click=lambda _: page.update()
+                "Reenviar",
+                
             ),
             ft.TextButton(
-                "Enviar",
-                on_click=lambda _:page.run_task(
-                    mensaje_enviar,
-                    correo,
-                    asunto,
-                    cuerpo,
-                    mensaje,
-                    page
-                )
+                "Responder",
+                on_click=lambda e: send_correo(e.page,correo.value,asunto.value)
             )
         ],
         alignment=ft.MainAxisAlignment.CENTER,
@@ -81,7 +86,6 @@ def send_correo(page_or_event,correoEn,asuntoEn):
                 cuerpo,
                 ft.Divider(height=10, color=ft.Colors.TRANSPARENT),
                 container_botones,
-                mensaje 
             ],
             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
             spacing=10
@@ -98,7 +102,6 @@ def send_correo(page_or_event,correoEn,asuntoEn):
         width=380, # Ancho del contenedor para que los campos de 300 luzcan centrados
     )
 
-    # Añadir a la página centrado utilizando Row y Column con expand
     page.add(
         ft.Column(
             [

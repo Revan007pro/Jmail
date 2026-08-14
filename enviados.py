@@ -1,20 +1,39 @@
 import flet as ft
-#from backend import enviar_correo
-from enviar_correo import send_correo
+from backend import file_enviados
 from read_correo import leer_correo
+from enviar_correo import send_correo
 
 
 
-
-async def mostrar_bandeja(page: ft.Page, datos):
-    #page = getattr(page_or_event, "page", page_or_event)
+async def mostrar_enviados(page_or_event):
+    page = getattr(page_or_event, "page", page_or_event)
+    
     page.clean()
-    page.title = "Bandeja de entrada"
+    page.title = "Bandeja de Enviados"
     page.padding = 10
     page.spacing = 0
     page.bgcolor = ft.Colors.BLACK
     prefs = ft.SharedPreferences()
-    
+
+
+    #anillo_carga = ft.ProgressRing(color=ft.Colors.GREEN_200)
+    #contenedor_carga = ft.Container(content=anillo_carga, alignment=ft.alignment.center, expand=True)
+    #
+    ## 2. Lo agregamos a la página y actualizamos INMEDIATAMENTE
+    #page.controls.clear() # Limpiamos lo que hubiera antes
+    #page.add(contenedor_carga)
+    #page.update()
+#
+    ## 3. Ahora sí, traemos los datos. 
+    ## La interfaz mostrará el anillo girando mientras esto ocurre.
+    #resultado = file_enviados()
+    #datos = resultado.get("datos", []) if resultado else []
+    #
+    ## 4. Una vez llegan los datos, quitamos el indicador de carga
+    #page.controls.remove(contenedor_carga)
+
+    resultado = file_enviados()
+    datos = resultado.get("datos", []) if resultado else []
     correos_cache = []
     for correo in datos:
         fila = ft.Button(
@@ -30,11 +49,11 @@ async def mostrar_bandeja(page: ft.Page, datos):
                         color=ft.Colors.GREEN_200
                     ),
                     ft.Container(
-                        content=ft.Text(correo.get("id")),
+                        content=ft.Text(correo.get("fecha")),
                         width=50
                     ),
                     ft.Container(
-                        content=ft.Text(correo.get("remitente")),
+                        content=ft.Text(correo.get("destino")),
                         expand=True
                     ),
                     ft.Container(
@@ -87,7 +106,6 @@ async def mostrar_bandeja(page: ft.Page, datos):
                 print("toque el boton: ",botones[indice])
                 await page.push_route(botones[indice])  
 
-      
         
 
     if es_movil:
@@ -102,14 +120,14 @@ async def mostrar_bandeja(page: ft.Page, datos):
             on_change=cambiar_vista
         )
         page.floating_action_button = ft.FloatingActionButton(
-            icon=ft.Icons.CREATE, tooltip="Redactar",on_click=lambda e: send_correo(e.page,"","")
+            icon=ft.Icons.CREATE, tooltip="Redactar",on_click=send_correo
         )
         page.add(lista)
 
     else:
         # PC: sidebar lateral
         side_bar = ft.NavigationRail(
-            selected_index=0,
+            selected_index=1,
             on_change=cambiar_vista,
             #padding=ft.Padding.top(20),
             destinations=[
@@ -134,4 +152,3 @@ async def mostrar_bandeja(page: ft.Page, datos):
 
     page.update()
     
-

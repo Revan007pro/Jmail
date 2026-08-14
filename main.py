@@ -3,13 +3,16 @@ import yaml
 from pathlib import Path
 from backend import leer_correos
 from bandeja import mostrar_bandeja
+from enviados import mostrar_enviados
+from borradores import mostrar_borradores
+from spam import mostrar_spam
 from token_script import crear_token
 import requests
 import flet_permission_handler as fph
 
 
 async def main(page: ft.Page): #solo debe haber un main.py para que la aplicaion funcione y le diga a flet cual compilar
-
+    page.clean()
     prefs = ft.SharedPreferences()
     page.title = "Jmail"
     page.theme_mode = ft.ThemeMode.DARK
@@ -63,20 +66,8 @@ async def main(page: ft.Page): #solo debe haber un main.py para que la aplicaion
         ),
         on_click=redireccionar
     )
-
-    async def route_change(e):
-
-        #page.views.clear()
-
-        if e.route == "/main":
-            print("volviendo a main")
-            await main(page)
-
-            
-        page.update()
-
-
-    page.on_route_change = route_change
+    bandeja_datos=[]
+    
 
 
     cuadro_imagen = ft.Container(
@@ -94,9 +85,39 @@ async def main(page: ft.Page): #solo debe haber un main.py para que la aplicaion
     
     
     version_nube=""
-    version_instalada="" #se debe cambiar cuando se suba la aplicacion 
+    version_instalada="0.0.4" #se debe cambiar cuando se suba la aplicacion 
     data_nube=None
+    
 
+    async def route_change(e):
+        try:
+            if e.route == "main":
+                print("volviendo a main")
+                await main(page)
+            elif e.route== "Recibidos":
+                print("yendo a bandeja de recibidos")
+                await mostrar_bandeja(page,bandeja_datos)
+
+            elif e.route== "Enviados":
+                print("yendo a bandeja de enviados")
+                await mostrar_enviados(page)
+            elif e.route== "Spam":
+                print("yendo a bandeja de spam")
+                await mostrar_spam(page)
+            elif e.route== "Borradores":
+                print("yendo a bandeja de borradores")
+                await mostrar_borradores(page)
+            else:
+                print("error direccionando")
+        except Exception as err:
+            print(f"error al direccionar: {err}")
+
+            
+        page.update()
+        
+        
+    page.on_route_change = route_change
+    
     async def set_version():
         await prefs.set("version_instada_guardada", version_instalada)
         print("la version instalada es: ",version_instalada)
@@ -148,31 +169,7 @@ async def main(page: ft.Page): #solo debe haber un main.py para que la aplicaion
         on_click=lambda e: page.run_task(actualizar, e)
     )
 
-    token_guardado = await prefs.get("mi_token_guardado")
-    usuario_guardado = await prefs.get("usuario_guardado")
-    pass_guardada = await prefs.get("pass_guardada")
-
-
-    if token_guardado and usuario_guardado and pass_guardada:
-        resultado = leer_correos(usuario=usuario_guardado, password=pass_guardada)
-        if resultado["exito"]:
-            mostrar_bandeja(page, resultado["datos"])
-            return  # ← sale para no renderizar el login
-    def guardar_correo_user():
-        if check_box.value:
-            carpeta = Path(__file__).parent / "save"
-            archivo = carpeta / "save_user.yaml"
-            with open(archivo,"w",encoding="utf-8") as f:
-                yaml.dump(usuario.value,f,allow_unicode=True,sort_keys=False)
-    async def guardar_token(resultado):
-        correo=usuario.value
-        password=credencial.value
-        hash_contrasenia=crear_token(correo,password)
-        if hash_contrasenia:
-            await prefs.set("mi_token_guardado", hash_contrasenia)
-            await prefs.set("usuario_guardado", correo)
-            await prefs.set("pass_guardada", password)
-            print("token guardado:", hash_contrasenia)
+    
 
     if es_movil:
 
@@ -228,7 +225,15 @@ async def main(page: ft.Page): #solo debe haber un main.py para que la aplicaion
         #page.update()
         pass
 
-
+    token_guardado = await prefs.get("mi_token_guardado")
+    usuario_guardado = await prefs.get("usuario_guardado")
+    pass_guardada = await prefs.get("pass_guardada")
+    if token_guardado and usuario_guardado and pass_guardada:
+        resultado = leer_correos(usuario=usuario_guardado, password=pass_guardada)
+        if resultado["exito"]:
+            bandeja_datos=resultado["datos"]
+            await mostrar_bandeja(page, bandeja_datos)
+            return  # ← sale para no renderizar el login
     async def ingresar_usuario(e):
         resultado=leer_correos(
             usuario=usuario.value,
@@ -241,13 +246,30 @@ async def main(page: ft.Page): #solo debe haber un main.py para que la aplicaion
             return       
         elif resultado["exito"]:
             page.clean()
-            mostrar_bandeja(page,resultado["datos"])
+            await mostrar_bandeja(page,resultado["datos"])
             await guardar_token(resultado)
 
         else:
             mensaje.value=f"error: {resultado['error']}"
             mensaje.color=ft.Colors.RED
         guardar_correo_user()
+    
+    
+    def guardar_correo_user():
+        if check_box.value:
+            carpeta = Path(__file__).parent / "save"
+            archivo = carpeta / "save_user.yaml"
+            with open(archivo,"w",encoding="utf-8") as f:
+                yaml.dump(usuario.value,f,allow_unicode=True,sort_keys=False)
+    async def guardar_token(resultado):
+        correo=usuario.value
+        password=credencial.value
+        hash_contrasenia=crear_token(correo,password)
+        if hash_contrasenia:
+            await prefs.set("mi_token_guardado", hash_contrasenia)
+            await prefs.set("usuario_guardado", correo)
+            await prefs.set("pass_guardada", password)
+            print("token guardado:", hash_contrasenia)
 
 
     def traer_correo_save():
@@ -285,6 +307,7 @@ async def main(page: ft.Page): #solo debe haber un main.py para que la aplicaion
             spacing=20,
         )
     )
+    
     traer_correo_save()
     await obtener_ultima_version()
     await set_version()
