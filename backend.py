@@ -4,6 +4,8 @@ from email.message import EmailMessage
 from email.header import decode_header
 import smtplib
 import flet as ft
+import requests
+import os
 from email.policy import default
 
 
@@ -23,7 +25,7 @@ def leer_correos(usuario,password):
         status, messenger = mail.search(None,"X-GM-RAW",'"category:primary is:inbox"')
         mail_ids=messenger[0].split()
 
-        ultimos_correos = mail_ids[-15:] if len(mail_ids) >= 15 else mail_ids
+        ultimos_correos = mail_ids[-10:] if len(mail_ids) >= 10 else mail_ids
 
         lista_correo=[]
 
@@ -64,25 +66,22 @@ def leer_correos(usuario,password):
         #return requests.status_codes(status.).body(lista_correo)
     except Exception as e:
         print(f"Error en leer_correos: {e}")
-        return {
-            "exito": False,
-            "datos": [],
-            "error": str(e)
-        }
+
+
+
+def traer_foto():
+    pass
 
 async def mensaje_enviar(correo:str,asunto:str,cuerpo:str,mensaje,page):
 
-    prefs = ft.SharedPreferences()
-    usuario_guardado = await prefs.get("usuario_guardado")
-    pass_guardada= await prefs.get("pass_guardada") #nota acepta la credencia guardada
     try:
         email_mensaje=EmailMessage()
         email_mensaje.set_content(cuerpo.value or "" ) 
         email_mensaje["Subject"]=asunto.value or ""
         email_mensaje["To"]=correo.value or ""
-        email_mensaje["From"]=usuario_guardado
+        email_mensaje["From"]=usuario_save
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as e:
-            e.login(usuario_guardado,pass_guardada)
+            e.login(usuario_save,password_save)
             e.send_message(email_mensaje)
             mensaje.value = "mensaje enviado correctamente"
             mensaje.color = ft.Colors.GREEN
@@ -106,7 +105,7 @@ def file_enviados():
         status, messenger = mail.search(None, "ALL")
         mail_ids=messenger[0].split()
 
-        ultimos_correos = mail_ids[-15:] if len(mail_ids) >= 15 else mail_ids
+        ultimos_correos = mail_ids[-10:] if len(mail_ids) >= 10 else mail_ids
 
         lista_correo=[]
 
@@ -155,7 +154,7 @@ def file_spam():
         status, messenger = mail.search(None, "ALL")
         mail_ids=messenger[0].split()
 
-        ultimos_correos = mail_ids[-15:] if len(mail_ids) >= 15 else mail_ids
+        ultimos_correos = mail_ids[-10:] if len(mail_ids) >= 10 else mail_ids
 
         lista_correo=[]
 
@@ -208,7 +207,7 @@ def file_borradores():
         status, messenger = mail.search(None, "ALL")
         mail_ids=messenger[0].split()
 
-        ultimos_correos = mail_ids[-15:] if len(mail_ids) >= 15 else mail_ids
+        ultimos_correos = mail_ids[-10:] if len(mail_ids) >= 10 else mail_ids
 
         lista_correo=[]
 

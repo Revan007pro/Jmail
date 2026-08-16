@@ -3,8 +3,6 @@ from backend import file_enviados
 from read_correo import leer_correo
 from enviar_correo import send_correo
 
-
-
 async def mostrar_enviados(page_or_event):
     page = getattr(page_or_event, "page", page_or_event)
     
@@ -16,21 +14,7 @@ async def mostrar_enviados(page_or_event):
     prefs = ft.SharedPreferences()
 
 
-    #anillo_carga = ft.ProgressRing(color=ft.Colors.GREEN_200)
-    #contenedor_carga = ft.Container(content=anillo_carga, alignment=ft.alignment.center, expand=True)
-    #
-    ## 2. Lo agregamos a la página y actualizamos INMEDIATAMENTE
-    #page.controls.clear() # Limpiamos lo que hubiera antes
-    #page.add(contenedor_carga)
-    #page.update()
-#
-    ## 3. Ahora sí, traemos los datos. 
-    ## La interfaz mostrará el anillo girando mientras esto ocurre.
-    #resultado = file_enviados()
-    #datos = resultado.get("datos", []) if resultado else []
-    #
-    ## 4. Una vez llegan los datos, quitamos el indicador de carga
-    #page.controls.remove(contenedor_carga)
+    
 
     resultado = file_enviados()
     datos = resultado.get("datos", []) if resultado else []

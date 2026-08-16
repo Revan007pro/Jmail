@@ -19,7 +19,6 @@ async def mostrar_bandeja(page: ft.Page, datos):
     for correo in datos:
         fila = ft.Button(
             visible=True,
-            #padding=ft.Padding(top=40),
             data=correo,
             on_click=lambda e:leer_correo(page,e.control.data),
             content=ft.Row(
@@ -30,17 +29,17 @@ async def mostrar_bandeja(page: ft.Page, datos):
                         color=ft.Colors.GREEN_200
                     ),
                     ft.Container(
-                        content=ft.Text(correo.get("id")),
+                        content=ft.Text(correo.get("fecha")),
                         width=50
                     ),
                     ft.Container(
                         content=ft.Text(correo.get("remitente")),
-                        expand=True
+                        width=50
                     ),
                     ft.Container(
                         content=ft.Text(correo.get("asunto")),
                         expand=True
-                    ),
+                    )
                 ]
             )
         )       
@@ -50,6 +49,30 @@ async def mostrar_bandeja(page: ft.Page, datos):
         
 
     es_movil = page.platform in [ft.PagePlatform.ANDROID, ft.PagePlatform.IOS]
+    nave_bar = ft.Container(
+        padding=ft.Padding(top=10),
+        content=ft.Row(
+            controls=[
+                ft.IconButton(
+                    icon=ft.Icons.DEHAZE,
+                    on_click=lambda e: print("Menú click")
+                ),
+                ft.TextField(
+                    prefix_icon=ft.Icons.SEARCH,
+                    label="Buscar",
+                    on_click=lambda e: print("Buscar click")
+                ),
+                #ft.CircleAvatar(
+                #    content=ft.Image(
+                #        #src=
+                #        fit=ft.BoxFit.COVER,
+                #    ),
+                #    radius=18
+                #)
+            ],
+            alignment=ft.MainAxisAlignment.SPACE_AROUND)
+    )
+    page.add(ft.Column(controls=[nave_bar]))
     #solo pc
     if not es_movil:
         page.title = "Jmail"

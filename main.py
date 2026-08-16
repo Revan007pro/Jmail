@@ -5,10 +5,12 @@ from backend import leer_correos
 from bandeja import mostrar_bandeja
 from enviados import mostrar_enviados
 from borradores import mostrar_borradores
+from anillo_carga import anillo_charge
 from spam import mostrar_spam
 from token_script import crear_token
 import requests
 import flet_permission_handler as fph
+import asyncio
 
 
 async def main(page: ft.Page): #solo debe haber un main.py para que la aplicaion funcione y le diga a flet cual compilar
@@ -85,30 +87,40 @@ async def main(page: ft.Page): #solo debe haber un main.py para que la aplicaion
     
     
     version_nube=""
-    version_instalada="0.0.4" #se debe cambiar cuando se suba la aplicacion 
+    version_instalada="0.0.7" #se debe cambiar cuando se suba la aplicacion 
     data_nube=None
     
 
     async def route_change(e):
         try:
-            if e.route == "main":
+            if e.route == "/main":
                 print("volviendo a main")
+                anillo_charge(page)
+                await asyncio.sleep(0.1)
                 await main(page)
             elif e.route== "Recibidos":
                 print("yendo a bandeja de recibidos")
+                anillo_charge(page)
+                await asyncio.sleep(0.1)
                 await mostrar_bandeja(page,bandeja_datos)
 
             elif e.route== "Enviados":
                 print("yendo a bandeja de enviados")
+                anillo_charge(page)
+                await asyncio.sleep(0.1)
                 await mostrar_enviados(page)
             elif e.route== "Spam":
                 print("yendo a bandeja de spam")
+                anillo_charge(page)
+                await asyncio.sleep(0.1)
                 await mostrar_spam(page)
             elif e.route== "Borradores":
                 print("yendo a bandeja de borradores")
+                anillo_charge(page)
+                await asyncio.sleep(0.1)
                 await mostrar_borradores(page)
-            else:
-                print("error direccionando")
+            #else:
+             #   print("error direccionando")
         except Exception as err:
             print(f"error al direccionar: {err}")
 
